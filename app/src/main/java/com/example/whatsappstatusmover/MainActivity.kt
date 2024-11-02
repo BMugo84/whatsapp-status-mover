@@ -78,14 +78,27 @@ class MainActivity : ComponentActivity() {
             if (!destinationDir.exists()) {
                 val created = destinationDir.mkdirs()
                 if (!created) {
-                    Toast.makeText(this, "Failed to create destination directory", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Failed to create destination directory",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return
                 }
             }
 
             var copyCount = 0
             sourceDir.listFiles()?.forEach { sourceFile ->
-                if (sourceFile.isFile) {
+                // Skip .nomedia files and ensure we only copy media files
+                if (sourceFile.isFile &&
+                    !sourceFile.name.equals(".nomedia") &&
+                    (sourceFile.name.endsWith(".jpg") ||
+                            sourceFile.name.endsWith(".jpeg") ||
+                            sourceFile.name.endsWith(".png") ||
+                            sourceFile.name.endsWith(".mp4") ||
+                            sourceFile.name.endsWith(".gif"))
+                ) {
+
                     val destFile = File(destinationDir, sourceFile.name)
                     if (!destFile.exists()) {  // Only copy if file doesn't exist in destination
                         try {
@@ -96,7 +109,11 @@ class MainActivity : ComponentActivity() {
                             }
                             copyCount++
                         } catch (e: Exception) {
-                            Toast.makeText(this, "Error copying ${sourceFile.name}: ${e.message}", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                this,
+                                "Error copying ${sourceFile.name}: ${e.message}",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 }
@@ -112,7 +129,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
 @Composable
 fun StatusCopierScreen(onCopyClick: () -> Unit) {
     Column(
