@@ -18,6 +18,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 
 class MainActivity : ComponentActivity() {
 
@@ -25,7 +27,7 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
-            moveFiles()
+            copyFiles()
         } else {
             Toast.makeText(
                 this,
@@ -39,10 +41,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                StatusMoverScreen(
-                    onMoveClick = {
+                StatusCopierScreen(
+                    onCopyClick = {
                         if (checkPermission()) {
-                            moveFiles()
+                            copyFiles()
                         } else {
                             requestPermission()
                         }
@@ -63,7 +65,7 @@ class MainActivity : ComponentActivity() {
         requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
     }
 
-    private fun moveFiles() {
+    private fun copyFiles() {
         try {
             val sourceDir = File("/storage/emulated/0/WhatsApp/Media/.Statuses")
             val destinationDir = File("/storage/emulated/0/DCIM/whatsapp_statuses")
@@ -81,17 +83,30 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            var moveCount = 0
-            sourceDir.listFiles()?.forEach { file ->
-                if (file.isFile) {
-                    val destFile = File(destinationDir, file.name)
-                    if (file.renameTo(destFile)) {
-                        moveCount++
+            var copyCount = 0
+            sourceDir.listFiles()?.forEach { sourceFile ->
+                if (sourceFile.isFile) {
+                    val destFile = File(destinationDir, sourceFile.name)
+                    if (!destFile.exists()) {  // Only copy if file doesn't exist in destination
+                        try {
+                            FileInputStream(sourceFile).use { input ->
+                                FileOutputStream(destFile).use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            copyCount++
+                        } catch (e: Exception) {
+                            Toast.makeText(this, "Error copying ${sourceFile.name}: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
 
-            Toast.makeText(this, "Successfully moved $moveCount files", Toast.LENGTH_SHORT).show()
+            val message = when {
+                copyCount > 0 -> "Successfully copied $copyCount new files"
+                else -> "No new files to copy"
+            }
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
@@ -99,7 +114,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun StatusMoverScreen(onMoveClick: () -> Unit) {
+fun StatusCopierScreen(onCopyClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -108,11 +123,11 @@ fun StatusMoverScreen(onMoveClick: () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Button(
-            onClick = onMoveClick,
+            onClick = onCopyClick,
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Move Status Files",
+                text = "Save Status Files",  // Changed text to better reflect the action
                 modifier = Modifier.padding(8.dp)
             )
         }
