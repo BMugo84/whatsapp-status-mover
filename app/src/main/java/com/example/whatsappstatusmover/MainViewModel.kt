@@ -55,18 +55,21 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
                     !sourceFile.name.equals(".nomedia") &&
                     (sourceFile.name.endsWith(".jpg") ||
                             sourceFile.name.endsWith(".jpeg") ||
-                            sourceFile.name.endsWith(".png") ||
-                            sourceFile.name.endsWith(".mp4") ||
-                            sourceFile.name.endsWith(".gif"))) {
+                            sourceFile.name.endsWith(".png"))) {
 
                     val destFile = File(destinationDir, sourceFile.name)
                     if (!destFile.exists()) {
                         try {
+                            // Copy original file
                             FileInputStream(sourceFile).use { input ->
                                 FileOutputStream(destFile).use { output ->
                                     input.copyTo(output)
                                 }
                             }
+
+                            // Generate thumbnail
+                            ThumbnailUtil.createThumbnail(destFile, destinationDir)
+
                             copyCount++
                         } catch (e: Exception) {
                             showToast("Error copying ${sourceFile.name}: ${e.message}")
@@ -84,6 +87,7 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
             showToast("Error: ${e.message}")
         }
     }
+
 
     private fun showToast(message: String) {
         Toast.makeText(app, message, Toast.LENGTH_SHORT).show()
